@@ -4,6 +4,7 @@ from typing import Any, Mapping, Generator
 from fastapi.testclient import TestClient
 from main import app
 from http import HTTPStatus
+from unittest.mock import patch, MagicMock
 
 
 @pytest.fixture
@@ -11,104 +12,48 @@ def app_client() -> Generator[TestClient, None, None]:
     with TestClient(app) as client:
         yield client
 
-# Хороший продавец -> False
-@pytest.mark.parametrize('seller_id', [1])
-@pytest.mark.parametrize('is_verified_seller', [True])
-@pytest.mark.parametrize('item_id', [1])
-@pytest.mark.parametrize('name', ['test'])
-@pytest.mark.parametrize('description', ['description'])
-@pytest.mark.parametrize('category', [1])
-@pytest.mark.parametrize('images_qty', [0])
-def test_predict_good_seller(
-    app_client: TestClient,
-    seller_id: int,
-    is_verified_seller: bool,
-    item_id: int,
-    name: str,
-    description: str,
-    category: int,
-    images_qty: int
-):
-    data = {
-        "seller_id":          seller_id,
-        "is_verified_seller": is_verified_seller,
-        "item_id":            item_id,
-        "name":               name,
-        "description":        description,
-        "category":           category,
-        "images_qty":         images_qty
-    }
-    
-    response = app_client.post('/predict', json=data)
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() is False
 
-# Плохой продавец, но с картинками -> False
-@pytest.mark.parametrize('seller_id', [1])
-@pytest.mark.parametrize('is_verified_seller', [False])
-@pytest.mark.parametrize('item_id', [1])
-@pytest.mark.parametrize('name', ['test'])
-@pytest.mark.parametrize('description', ['description'])
-@pytest.mark.parametrize('category', [1])
-@pytest.mark.parametrize('images_qty', [1])
-def test_bad_seller_with_images(
-    app_client: TestClient,
-    seller_id: int,
-    is_verified_seller: bool,
-    item_id: int,
-    name: str,
-    description: str,
-    category: int,
-    images_qty: int
-):
+@pytest.mark.parametrize(
+    "test_name,is_verified,images_qty,description,category",
+    [
+    ("verified_seller_few_images", True, 2, "desc", 10),
+    ("unverified_seller_no_images", False, 0, "desc" * 4, 5),
+    ("verified_seller_many_images", True, 8, "desc" * 20, 25),
+    ("unverified_seller_many_images", False, 10, "desc" * 3, 15),
+    ("verified_seller_max_images", True, 10, "desc" * 8, 1),
+    ("unverified_minimal_data", False, 0, "", 1),
+    ]
+)
+def test_predict_success_cases(
+    app_client,
+    test_name,
+    is_verified,
+    images_qty,
+    description,
+    category
+):    
     data = {
-        "seller_id":          seller_id,
-        "is_verified_seller": is_verified_seller,
-        "item_id":            item_id,
-        "name":               name,
-        "description":        description,
-        "category":           category,
-        "images_qty":         images_qty
+        "seller_id": 1,
+        "is_verified_seller": is_verified,
+        "item_id": 1,
+        "name": f"Test Item",
+        "description": description,
+        "category": category,
+        "images_qty": images_qty
     }
-    
-    response = app_client.post('/predict', json=data)
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() is False
 
-# Плохой продавец, без картинок -> True
-@pytest.mark.parametrize('seller_id', [1])
-@pytest.mark.parametrize('is_verified_seller', [False])
-@pytest.mark.parametrize('item_id', [1])
-@pytest.mark.parametrize('name', ['test'])
-@pytest.mark.parametrize('description', ['description'])
-@pytest.mark.parametrize('category', [1])
-@pytest.mark.parametrize('images_qty', [0])
-def test_bad_seller_without_images(
-    app_client: TestClient,
-    seller_id: int,
-    is_verified_seller: bool,
-    item_id: int,
-    name: str,
-    description: str,
-    category: int,
-    images_qty: int
-):
-    data = {
-        "seller_id":          seller_id,
-        "is_verified_seller": is_verified_seller,
-        "item_id":            item_id,
-        "name":               name,
-        "description":        description,
-        "category":           category,
-        "images_qty":         images_qty
-    }
+    is_violation = (data['is_verified_seller'] == False) & (data['images_qty'] < 2)
     
     response = app_client.post('/predict', json=data)
+    
     assert response.status_code == HTTPStatus.OK
-    assert response.json() is True
+    response_data = response.json()
+    assert response_data["is_violation"] == is_violation
+    assert 0.0 <= response_data["probability"] <= 1.0
+
 
 # Тест на seller_id > 0
-@pytest.mark.parametrize('seller_id', [0])
+@pytest.mark.parametrize('seller_id', [0, -5, -10, -1000, -1000000])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
 @pytest.mark.parametrize('name', ['test'])
@@ -141,7 +86,7 @@ def test_seller_id_zero(
 # Тест на item_id > 0
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
-@pytest.mark.parametrize('item_id', [0])
+@pytest.mark.parametrize('item_id', [0, -5, -10, -1000, -1000000])
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
@@ -204,7 +149,7 @@ def test_empty_name(
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
-@pytest.mark.parametrize('name', ['*' * 257])
+@pytest.mark.parametrize('name', ['*' * 257, '*' * 258, '*' * 300, '*' * 1000, '*' * 1_000_000])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
@@ -236,7 +181,7 @@ def test_long_name(
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
 @pytest.mark.parametrize('name', ['test'])
-@pytest.mark.parametrize('description', ['a' * (2**14 + 1)])
+@pytest.mark.parametrize('description', ['a' * (2**14 + 1), 'a' * (2**14 + 2), 'a' * (2**15), 'a' * 1_000_000])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
 def test_long_description(
@@ -270,7 +215,7 @@ def test_long_description(
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
-@pytest.mark.parametrize('images_qty', [-1])
+@pytest.mark.parametrize('images_qty', [-1, -3, -5, -10, -1000, -1_000_000])
 def test_negative_images_qty(
     app_client: TestClient,
     seller_id: int,
@@ -294,15 +239,15 @@ def test_negative_images_qty(
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-# seller_id должен быть int, а не str
-@pytest.mark.parametrize('seller_id', ['str'])
+# seller_id должен быть int, а не что-то другое
+@pytest.mark.parametrize('seller_id', ['str', False, 1.1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
-def test_seller_id_string_type(
+def test_seller_id_int_type(
     app_client: TestClient,
     seller_id: str,
     is_verified_seller: bool,
@@ -325,15 +270,15 @@ def test_seller_id_string_type(
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-# is_verified_seller должен быть bool, а не str
+# is_verified_seller должен быть bool, а не что-то другое
 @pytest.mark.parametrize('seller_id', [1])
-@pytest.mark.parametrize('is_verified_seller', ['str'])
+@pytest.mark.parametrize('is_verified_seller', ['str', 3, 1.1])
 @pytest.mark.parametrize('item_id', [1])
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
-def test_is_verified_seller_string_type(
+def test_is_verified_seller_bool_type(
     app_client: TestClient,
     seller_id: int,
     is_verified_seller: str,
@@ -356,15 +301,15 @@ def test_is_verified_seller_string_type(
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-# item_id должен быть int, а не str
+# item_id должен быть int, а не что-то другое
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
-@pytest.mark.parametrize('item_id', ['str'])
+@pytest.mark.parametrize('item_id', ['str', False, 1.1])
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
-def test_item_id_string_type(
+def test_item_id_int_type(
     app_client: TestClient,
     seller_id: int,
     is_verified_seller: bool,
@@ -387,15 +332,15 @@ def test_item_id_string_type(
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-# name должен быть str, а не int
+# name должен быть str, а не что-то другое
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
-@pytest.mark.parametrize('name', [123]) 
+@pytest.mark.parametrize('name', [1, False, 1.1]) 
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
-def test_name_int_type(
+def test_name_str_type(
     app_client: TestClient,
     seller_id: int,
     is_verified_seller: bool,
@@ -418,15 +363,15 @@ def test_name_int_type(
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-# description должен быть str, а не int
+# description должен быть str, а не что-то другое
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
 @pytest.mark.parametrize('name', ['test'])
-@pytest.mark.parametrize('description', [123])
+@pytest.mark.parametrize('description', [1, False, 1.1])
 @pytest.mark.parametrize('category', [1])
 @pytest.mark.parametrize('images_qty', [0])
-def test_description_int_type(
+def test_description_str_type(
     app_client: TestClient,
     seller_id: int,
     is_verified_seller: bool,
@@ -449,15 +394,15 @@ def test_description_int_type(
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-# category должен быть int, а не str
+# category должен быть int, а не что-то другое
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
-@pytest.mark.parametrize('category', ['str'])
+@pytest.mark.parametrize('category', ['str', False, 1.1])
 @pytest.mark.parametrize('images_qty', [0])
-def test_category_string_type(
+def test_category_int_type(
     app_client: TestClient,
     seller_id: int,
     is_verified_seller: bool,
@@ -487,8 +432,8 @@ def test_category_string_type(
 @pytest.mark.parametrize('name', ['test'])
 @pytest.mark.parametrize('description', ['description'])
 @pytest.mark.parametrize('category', [1])
-@pytest.mark.parametrize('images_qty', ['str'])
-def test_images_qty_string_type(
+@pytest.mark.parametrize('images_qty', ['str', 1.1])
+def test_images_qty_int_type(
     app_client: TestClient,
     seller_id: int,
     is_verified_seller: bool,
