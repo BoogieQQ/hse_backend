@@ -4,7 +4,6 @@ from typing import Any, Mapping, Generator
 from fastapi.testclient import TestClient
 from main import app
 from http import HTTPStatus
-from unittest.mock import patch, MagicMock
 
 
 @pytest.fixture
@@ -12,6 +11,8 @@ def app_client() -> Generator[TestClient, None, None]:
     with TestClient(app) as client:
         yield client
 
+
+### ---------------------- ТЕСТЫ НА РАБОТУ МЛ-МОДЕЛИ ------------------------------------------
 
 @pytest.mark.parametrize(
     "test_name,is_verified,images_qty,description,category",
@@ -51,6 +52,7 @@ def test_predict_success_cases(
     assert response_data["is_violation"] == is_violation
     assert 0.0 <= response_data["probability"] <= 1.0
 
+### ---------------------- ТЕСТЫ ВАЛИДАЦИИ ВХОДНЫХ ЗНАЧЕНИЙ ------------------------------------------
 
 # Тест на seller_id > 0
 @pytest.mark.parametrize('seller_id', [0, -5, -10, -1000, -1000000])
@@ -238,6 +240,8 @@ def test_negative_images_qty(
     
     response = app_client.post('/predict', json=data)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+### ---------------------- ТЕСТЫ ВАЛИДАЦИИ ВХОДНЫХ ТИПОВ ------------------------------------------
 
 # seller_id должен быть int, а не что-то другое
 @pytest.mark.parametrize('seller_id', ['str', False, 1.1])
