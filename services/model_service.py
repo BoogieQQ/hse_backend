@@ -63,8 +63,6 @@ class ModelService:
             
             feature_value = request_data[feature]
 
-            logger.info(request_data)
-
             if CONFIG['model'].get(feature + normalization_const_postfix, None) is not None:
                 normalized_const = CONFIG['model'][feature + normalization_const_postfix]
                 feature_vector_prep.append(feature_value / normalized_const)

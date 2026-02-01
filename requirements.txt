@@ -7,3 +7,9 @@ loguru==0.7.2
 numpy==1.26.4
 scikit-learn== 1.5.2
 pytest==9.0.2
+asyncpg==0.31.0
+psycopg2-binary==2.9.11
+yandex-pgmigrate==1.0.10
+pytest-asyncio==1.3.0
+pytest-tornasync==0.6.0.post2
+anyio==4.11.0

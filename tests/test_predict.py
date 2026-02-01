@@ -1,13 +1,12 @@
 import pytest
 
-from typing import Any, Mapping, Generator
 from fastapi.testclient import TestClient
 from main import app
 from http import HTTPStatus
 
 
 @pytest.fixture
-def app_client() -> Generator[TestClient, None, None]:
+def app_client():
     with TestClient(app) as client:
         yield client
 
