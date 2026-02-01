@@ -1,0 +1,14 @@
+app:
+  host: "0.0.0.0"
+  port: 8003
+
+model:
+  model_path: models/my_model.pkl
+  features:
+    - is_verified_seller
+    - images_qty
+    - description_len
+    - category
+  images_qty_normalize: 10
+  description_len_normalize: 1000
+  category_normalize: 100
