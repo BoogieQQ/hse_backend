@@ -12,3 +12,7 @@ model:
   images_qty_normalize: 10
   description_len_normalize: 1000
   category_normalize: 100
+
+kafka:
+  bootstrap_servers: localhost:9092
+  moderation_topic: moderation

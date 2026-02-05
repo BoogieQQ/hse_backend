@@ -39,8 +39,5 @@ async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
     except (UserNotFoundError, AdvertisementNotFoundError, AdvertisementCreationError, UserNotCreationError) as e:
         raise
     except Exception as e:
-        logger.error(f"Внутренняя ошибка сервера при предсказании: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Внутренняя ошибка сервера при предсказании."
-        )
+        logger.error(f"Что-то пошло не так: {e}")
+        raise e
