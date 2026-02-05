@@ -23,9 +23,6 @@ async def predict(request: PredictionRequest):
         
         return response
         
-    except HTTPException:
-        raise
-        
     except ValueError as e:
         logger.error(f"Ошибка валидации входных данных: {e}")
 

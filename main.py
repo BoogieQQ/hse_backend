@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from loguru import logger
 
 from routes.prediction import router as predict_router
+from routes.simple_prediction import router as simple_prediction_router
 from services.model_service import ModelService
 
 with open('config.yaml', 'r') as file:
@@ -23,6 +24,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(predict_router)
+app.include_router(simple_prediction_router)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host=CONFIG['app']['host'], port=CONFIG['app']['port'])
