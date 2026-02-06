@@ -13,7 +13,7 @@ async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> As
         advertisement_exist = await ad_repo.exists(request.item_id)
 
         if not advertisement_exist:
-            logger.error(f"Объявление {request.item_id} не найдено: {e}")
+            logger.error(f"Объявление {request.item_id} не найдено.")
             raise HTTPException(
                 status_code=404,
                 detail=f"Объявление с ID {request.item_id} не найдено"
@@ -38,12 +38,6 @@ async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> As
             moderation_result = await moderation_repo.create(
                 item_id=request.item_id,
                 status="pending",
-                is_violation=None,
-                probability=None,
-                error_message=None,
-                processed_at=None,
-                retry_count=0,
-                max_retries=3 
             )
             logger.info(f"Создана запись модерации с ID: {moderation_result.id}")
         except Exception as e:

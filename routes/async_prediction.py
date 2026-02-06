@@ -6,9 +6,9 @@ from loguru import logger
 from services.async_prediction_service import async_predict as async_prediction_service
 
 
-router = APIRouter()
+async_prediction_router = APIRouter()
 
-@router.post("/async_predict")
+@async_prediction_router.post("/async_predict")
 async def async_predict(request: AsyncPredictRequest, fastapi_request: Request):
     try:
         

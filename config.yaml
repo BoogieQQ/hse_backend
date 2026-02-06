@@ -15,4 +15,14 @@ model:
 
 kafka:
   bootstrap_servers: localhost:9092
+  retries_before_dql: 3
+  max_retry_delay: 10
   moderation_topic: moderation
+  moderation_dlq_topic: moderattion_dlq
+  moderation_consumer_group: moderation_worker
+
+database:
+  dbname: avito
+  user: postgres
+  host: localhost
+  port: 5432

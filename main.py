@@ -5,9 +5,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from loguru import logger
 
-from routes.prediction import router as predict_router
-from routes.simple_prediction import router as simple_prediction_router
-from routes.async_prediction import router as async_prediction_router
+from routes.prediction import prediction_router
+from routes.simple_prediction import simple_prediction_router
+from routes.async_prediction import async_prediction_router
+from routes.moderation_result import moderation_result_router 
+
 from services.model_service import ModelService
 from clients.kafka import KafkaProducer
 
@@ -30,9 +32,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(predict_router)
+app.include_router(prediction_router)
 app.include_router(simple_prediction_router)
 app.include_router(async_prediction_router)
+app.include_router(moderation_result_router)
 
 
 

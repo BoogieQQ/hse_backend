@@ -6,7 +6,5 @@ CREATE TABLE moderation_results (
     probability FLOAT,
     error_message TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP,
-    retry_count INTEGER DEFAULT 0,
-    max_retries INTEGER DEFAULT 3
+    processed_at TIMESTAMP
 );
