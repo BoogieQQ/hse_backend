@@ -9,3 +9,9 @@ class AdvertisementCreationError(Exception):
 
 class UserNotCreationError(Exception):
     ...
+
+class ModerationResultNotFoundError(Exception):
+    ...
+
+class ModerationResultCreationError(Exception):
+    ...

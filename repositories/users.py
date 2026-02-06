@@ -19,8 +19,8 @@ class UserPostgresStorage:
             try:
                 row = await connection.fetchrow(query, seller_id, is_verified_seller)
                 return dict(row)
-            except Exception:
-                raise UserNotCreationError('Не удалось создать объявление.')
+            except Exception as e:
+                raise UserNotCreationError(str(e))
     
     async def select(self, seller_id: int):
         query = '''
