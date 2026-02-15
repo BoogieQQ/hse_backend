@@ -18,8 +18,5 @@ def predict(request: PredictionRequest) -> PredictionResponse:
         )
         
     except Exception as e:
-        logger.error(f"Внутренняя ошибка сервера при предсказании: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Внутренняя ошибка сервера при предсказании."
-        )
+        logger.error(f"Что-то пошло не так: {e}")
+        raise e

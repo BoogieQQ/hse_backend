@@ -22,8 +22,8 @@ class AdvertisementPostgresStorage:
                 row = await connection.fetchrow(query, item_id, seller_id, name, 
                                             description, category, images_qty)
                 return dict(row)
-            except Exception:
-                raise AdvertisementCreationError('Не удалось создать объявление.')
+            except Exception as e:
+                raise AdvertisementCreationError(str(e))
     
     async def select(self, item_id: int):
         query = '''
@@ -40,6 +40,19 @@ class AdvertisementPostgresStorage:
                 return dict(row)
             
             raise AdvertisementNotFoundError('Не найдено объявление.')
+
+    async def exists(self, item_id: int) -> bool:
+        query = '''
+            SELECT EXISTS(
+                SELECT 1 
+                FROM advertisements 
+                WHERE item_id = $1::INTEGER
+            )
+        '''
+        
+        async with get_pg_connection() as connection:
+            result = await connection.fetchval(query, item_id)
+            return bool(result)
     
     async def delete(self, item_id: int):
         query = '''
@@ -68,6 +81,10 @@ class AdvertisementRepository:
     async def get(self, item_id: int):
         raw_advertisement = await self.advertisement_postgres_storage.select(item_id)
         return Advertisement(**raw_advertisement)
+
+    async def exists(self, item_id: int):
+        is_exist = await self.advertisement_postgres_storage.exists(item_id)
+        return is_exist
 
     async def delete(self, item_id: int):
         raw_advertisement = await self.advertisement_postgres_storage.delete(item_id)

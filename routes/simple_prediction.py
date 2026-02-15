@@ -7,9 +7,9 @@ from services.simple_prediction_service import simple_predict as simple_predicti
 from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError, UserNotCreationError
 
 
-router = APIRouter()
+simple_prediction_router = APIRouter()
 
-@router.post("/simple_predict")
+@simple_prediction_router.post("/simple_predict")
 async def simple_predict(request: SimplePredictRequest):
     try:
         
@@ -37,13 +37,13 @@ async def simple_predict(request: SimplePredictRequest):
         logger.error(f"Не удалось создать объявление!")
         raise HTTPException(
             status_code=400,
-            detail=f"Пользователь не найден."
+            detail=f"Ошибка при создании объявления."
         )
     except UserNotCreationError as e:
         logger.error(f"Не удалось создать пользователя!")
         raise HTTPException(
             status_code=400,
-            detail=f"Объявление не найдено."
+            detail=f"Ошибка при созадании пользователя."
         )
     except ValueError as e:
         logger.error(f"Ошибка валидации входных данных: {e}")

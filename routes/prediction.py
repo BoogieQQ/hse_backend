@@ -5,9 +5,9 @@ from services.model_service import ModelService
 
 from loguru import logger
 
-router = APIRouter()
+prediction_router = APIRouter()
 
-@router.post("/predict", response_model=PredictionResponse)
+@prediction_router.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
     try:
         if not ModelService.is_initialized():
