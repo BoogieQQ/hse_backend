@@ -56,36 +56,45 @@ async def main():
                     logger.info(f'Обработка объявления task_id={task_id}')
                     
                     moderations_repo = ModerationResultRepository()
+                    ad_repo = AdvertisementRepository()
+                    user_repo = UserRepository()
 
                     moderation_task = await moderations_repo.get(task_id)
 
                     item_id = moderation_task.item_id
 
-                    ad_repo = AdvertisementRepository()
+                    cached_result = await ad_repo.check_cache(item_id)
 
-                    exists = await ad_repo.exists(item_id)
-                    
-                    if not exists:
-                        logger.error(f'Объявление {item_id} не найдено.')
-                        raise AdvertisementNotFoundError(f'Объявление {item_id} не найдено.')
-                    
-                    logger.info(f'Объявление {item_id} успешно найдено.')
+                    if cached_result:
+                        logger.info(f"Найден кэшированный результат модерации для объявления {item_id}")
 
-                    advertisement = await ad_repo.get(item_id)
-                    
-                    user_repo = UserRepository()
-                    user = await user_repo.get(advertisement.seller_id)
+                        is_violation, probability = cached_result.is_violation, cached_result.probability
+                    else:
+                        exists = await ad_repo.exists(item_id)
+                        
+                        if not exists:
+                            logger.error(f'Объявление {item_id} не найдено.')
+                            raise AdvertisementNotFoundError(f'Объявление {item_id} не найдено.')
+                        
+                        logger.info(f'Объявление {item_id} успешно найдено.')
 
-                    ad_data = advertisement.model_dump()
-                    user_data = user.model_dump()
-                    request = {**ad_data, **user_data}
-                    logger.info(f'Загружены данные из бд: {request}')
+                        advertisement = await ad_repo.get(item_id)
+                        
+                        user = await user_repo.get(advertisement.seller_id)
 
-                    features = ModelService.extract_features(request)
-                
-                    is_violation, probability = ModelService.predict(features)
+                        ad_data = advertisement.model_dump()
+                        user_data = user.model_dump()
+                        request = {**ad_data, **user_data}
+                        logger.info(f'Загружены данные из бд: {request}')
+
+                        features = ModelService.extract_features(request)
                     
-                    logger.info(f"Результат предсказания: seller_id={request['seller_id']}, item_id={request['item_id']}, is_violation={is_violation}, probability={probability:.4f}")
+                        is_violation, probability = ModelService.predict(features)
+                        
+                        await ad_repo.to_cache(item_id=item_id, is_violation=is_violation, probability=probability)
+
+                        
+                    logger.info(f"Результат предсказания: item_id={item_id}, is_violation={is_violation}, probability={probability:.4f}")
 
                     await moderations_repo.update(task_id=task_id, status='completed', is_violation=is_violation, probability=probability)
                     
