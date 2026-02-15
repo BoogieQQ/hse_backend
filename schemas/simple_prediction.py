@@ -11,6 +11,7 @@ class Advertisement(BaseModel):
     description:        str = Field(min_length=0, max_length=2**14)
     category:           int = Field(gt=0)
     images_qty:         int = Field(ge=0)
+    is_closed:          bool | None = False
 
 class SimplePredictRequest(BaseModel):
     item_id: int = Field(gt=0)
