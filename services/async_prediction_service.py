@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from schemas.async_prediction import AsyncPredictRequest, AsyncPredictResponse
 from loguru import logger
 from errors import AdvertisementNotFoundError
-from my_prometheus_client import PREDICTION_ERRORS_TOTAL
+from metrics import PREDICTION_ERRORS_TOTAL
 
 async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> AsyncPredictResponse:
     try:

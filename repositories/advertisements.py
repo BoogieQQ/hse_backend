@@ -9,7 +9,7 @@ from clients.redis import get_redis_connection
 from datetime import timedelta
 from json import loads, dumps
 import time
-from my_prometheus_client import DB_QUERY_DURATION
+from metrics import DB_QUERY_DURATION
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@ import yaml
 from typing import Dict, Any
 from model import MyModel
 from loguru import logger
-from my_prometheus_client import MODEL_PREDICTION_PROBABILITY, PREDICTIONS_TOTAL, PREDICTION_DURATION
+from metrics import MODEL_PREDICTION_PROBABILITY, PREDICTIONS_TOTAL, PREDICTION_DURATION
 import time
 
 with open('config.yaml', 'r') as file:

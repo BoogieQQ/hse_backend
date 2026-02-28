@@ -5,7 +5,7 @@ from errors import AdvertisementNotFoundError, UserNotFoundError, UserNotCreatio
 from schemas.simple_prediction import SimplePredictRequest, User, Advertisement
 from clients.postgres import get_pg_connection
 import time
-from my_prometheus_client import DB_QUERY_DURATION
+from metrics import DB_QUERY_DURATION
 
 @dataclass(frozen=True)
 class UserPostgresStorage:    

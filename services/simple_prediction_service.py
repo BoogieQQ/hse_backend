@@ -10,7 +10,7 @@ from loguru import logger
 from fastapi import HTTPException
 
 from asyncpg.exceptions import ForeignKeyViolationError
-from my_prometheus_client import PREDICTION_ERRORS_TOTAL
+from metrics import PREDICTION_ERRORS_TOTAL
 
 
 async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
