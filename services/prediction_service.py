@@ -2,6 +2,7 @@ from typing import Dict, Any, Optional
 from services.model_service import ModelService
 from schemas.prediction import PredictionRequest, PredictionResponse
 from loguru import logger
+from my_prometheus_client import PREDICTION_ERRORS_TOTAL
 
 
 def predict(request: PredictionRequest) -> PredictionResponse:
@@ -19,4 +20,5 @@ def predict(request: PredictionRequest) -> PredictionResponse:
         
     except Exception as e:
         logger.error(f"Что-то пошло не так: {e}")
+        PREDICTION_ERRORS_TOTAL.labels(error_type="general_exception").inc()
         raise e

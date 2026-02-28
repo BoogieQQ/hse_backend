@@ -10,6 +10,7 @@ from loguru import logger
 from fastapi import HTTPException
 
 from asyncpg.exceptions import ForeignKeyViolationError
+from my_prometheus_client import PREDICTION_ERRORS_TOTAL
 
 
 async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
@@ -46,7 +47,10 @@ async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
         )
     
     except (UserNotFoundError, AdvertisementNotFoundError, AdvertisementCreationError, UserNotCreationError) as e:
+        error_type = type(e).__name__
+        PREDICTION_ERRORS_TOTAL.labels(error_type=error_type).inc()
         raise
     except Exception as e:
         logger.error(f"Что-то пошло не так: {e}")
+        PREDICTION_ERRORS_TOTAL.labels(error_type="general_exception").inc()
         raise e

@@ -5,7 +5,8 @@ import yaml
 from typing import Dict, Any
 from model import MyModel
 from loguru import logger
-
+from my_prometheus_client import MODEL_PREDICTION_PROBABILITY, PREDICTIONS_TOTAL, PREDICTION_DURATION
+import time
 
 with open('config.yaml', 'r') as file:
     CONFIG = yaml.safe_load(file)
@@ -87,10 +88,17 @@ class ModelService:
         if not cls.is_initialized():
             raise ValueError("Модель не инициализирована")
         try:
+            start_time = time.time()
             prediction  = cls.model_wrapper.predict(features)
             probability = cls.model_wrapper.predict_proba(features)
-            
+            duration = time.time() - start_time
+
             is_violation = bool(prediction)
+            result_label = "violation" if is_violation else "ok"
+            
+            PREDICTION_DURATION.observe(duration)
+            PREDICTIONS_TOTAL.labels(result=result_label).inc()
+            MODEL_PREDICTION_PROBABILITY.labels(prediction_type="inference").set(probability)
                     
             return is_violation, probability
         except Exception as e:
