@@ -17,7 +17,7 @@ async def simple_predict(request: SimplePredictRequest):
 
         response = await simple_prediction_service(request)
         
-        logger.info(f'Returning {response}')
+        logger.info(f'Успешно, результат предсказания: {response}')
 
         return response
     

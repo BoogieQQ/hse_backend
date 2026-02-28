@@ -15,6 +15,13 @@ from asyncpg.exceptions import ForeignKeyViolationError
 async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
     try:
         ad_repo = AdvertisementRepository()
+
+        cached_result = await ad_repo.check_cache(request.item_id)
+        if cached_result:
+            logger.info(f"Найден кэшированный результат модерации для объявления {request.item_id}")
+
+            return cached_result
+        
         advertisement = await ad_repo.get(request.item_id)
         
         user_repo = UserRepository()
@@ -31,6 +38,8 @@ async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
         
         logger.info(f"Результат предсказания: seller_id={request['seller_id']}, item_id={request['item_id']}, is_violation={is_violation}, probability={probability:.4f}")
         
+        await ad_repo.to_cache(item_id=request['item_id'], is_violation=is_violation, probability=probability)
+
         return PredictionResponse(
             is_violation=is_violation,
             probability=probability

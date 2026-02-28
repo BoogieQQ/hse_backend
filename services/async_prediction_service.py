@@ -6,6 +6,7 @@ from fastapi import HTTPException
 
 from schemas.async_prediction import AsyncPredictRequest, AsyncPredictResponse
 from loguru import logger
+from errors import AdvertisementNotFoundError
 
 async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> AsyncPredictResponse:
     try:
@@ -14,10 +15,7 @@ async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> As
 
         if not advertisement_exist:
             logger.error(f"Объявление {request.item_id} не найдено.")
-            raise HTTPException(
-                status_code=404,
-                detail=f"Объявление с ID {request.item_id} не найдено"
-            )
+            raise AdvertisementNotFoundError(f"Объявление с ID {request.item_id} не найдено")
         
         logger.info(f"Объявление {request.item_id} найдено в БД")
 
@@ -53,6 +51,8 @@ async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> As
             status="pending",
             message="Moderation request accepted"
         )
+    except AdvertisementNotFoundError:
+        raise
     except Exception as e:
         logger.error(f"Что-то пошло не так: {e}")
         raise e

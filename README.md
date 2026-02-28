@@ -7,7 +7,7 @@ cd db
 pgmigrate -t latest  migrate
 ```
 
-Для запуска kafka:
+Для запуска kafka/redis:
 ```docker-compose up -d```
 
 Запуск воркера:
