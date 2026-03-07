@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from schemas.async_prediction import AsyncPredictRequest, AsyncPredictResponse
 from loguru import logger
 from errors import AdvertisementNotFoundError
+from metrics import PREDICTION_ERRORS_TOTAL
 
 async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> AsyncPredictResponse:
     try:
@@ -40,19 +41,26 @@ async def async_predict(request: AsyncPredictRequest, kafka_producer=None) -> As
             logger.info(f"Создана запись модерации с ID: {moderation_result.id}")
         except Exception as e:
             logger.error(f"Ошибка создания записи модерации: {e}")
+            error_type = type(e).__name__
+            PREDICTION_ERRORS_TOTAL.labels(error_type=error_type).inc()
             raise e
         try:
             await kafka_producer.send_moderation_request(moderation_result.id)
         except Exception as e:
             logger.error(f"Ошибка отправки в Kafka: {e}")
+            error_type = type(e).__name__
+            PREDICTION_ERRORS_TOTAL.labels(error_type=error_type).inc()
         
         return AsyncPredictResponse(
             task_id=moderation_result.id,
             status="pending",
             message="Moderation request accepted"
         )
-    except AdvertisementNotFoundError:
+    except AdvertisementNotFoundError as e:
+        error_type = type(e).__name__
+        PREDICTION_ERRORS_TOTAL.labels(error_type=error_type).inc()
         raise
     except Exception as e:
         logger.error(f"Что-то пошло не так: {e}")
+        PREDICTION_ERRORS_TOTAL.labels(error_type="general_exception").inc()
         raise e

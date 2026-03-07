@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from errors import AdvertisementNotFoundError, UserNotFoundError, UserNotCreationError
 from schemas.simple_prediction import SimplePredictRequest, User, Advertisement
 from clients.postgres import get_pg_connection
-
+import time
+from metrics import DB_QUERY_DURATION
 
 @dataclass(frozen=True)
 class UserPostgresStorage:    
@@ -14,10 +15,14 @@ class UserPostgresStorage:
             VALUES ($1::INTEGER, $2::BOOLEAN)
             RETURNING *
         '''
-        
+
+        start_time = time.time()
         async with get_pg_connection() as connection:
             try:
                 row = await connection.fetchrow(query, seller_id, is_verified_seller)
+                duration = time.time() - start_time
+
+                DB_QUERY_DURATION.labels(query_type="create", table="users").observe(duration)
                 return dict(row)
             except Exception as e:
                 raise UserNotCreationError(str(e))
@@ -29,9 +34,13 @@ class UserPostgresStorage:
             WHERE seller_id = $1::INTEGER
             LIMIT 1
         '''
-        
+
+        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, seller_id)
+            duration = time.time() - start_time
+
+            DB_QUERY_DURATION.labels(query_type="select", table="users").observe(duration)
             
             if row:
                 return dict(row)
@@ -44,9 +53,13 @@ class UserPostgresStorage:
             WHERE seller_id = $1::INTEGER
             RETURNING *
         '''
-        
+
+        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, seller_id)
+            duration = time.time() - start_time
+
+            DB_QUERY_DURATION.labels(query_type="delete", table="users").observe(duration)
             
             if row:
                 return dict(row)

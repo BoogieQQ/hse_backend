@@ -13,6 +13,7 @@ from routes.close import close_router
 
 from services.model_service import ModelService
 from clients.kafka import KafkaProducer
+from prometheus_fastapi_instrumentator import Instrumentator
 
 with open('config.yaml', 'r') as file:
     CONFIG = yaml.safe_load(file)
@@ -32,6 +33,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+Instrumentator().instrument(app).expose(app)
 
 app.include_router(prediction_router)
 app.include_router(simple_prediction_router)

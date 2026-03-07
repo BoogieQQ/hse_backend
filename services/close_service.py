@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from loguru import logger
 from repositories.advertisements import AdvertisementRepository
 from schemas.simple_prediction import Advertisement
+from errors import AdvertisementNotFoundError
 
 async def close_advertisement(item_id: int) -> Advertisement:
 
