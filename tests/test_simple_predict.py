@@ -11,13 +11,34 @@ from repositories.users import UserRepository
 from repositories.advertisements import AdvertisementRepository
 from repositories.users import UserRepository
 from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError
+from dependencies import CurrentUserRequired
+from schemas.account import Account
+from dependencies import get_current_user_required
 
 @pytest.fixture
 def app_client():
     with TestClient(app) as client:
         yield client
 
+@pytest.fixture
+def mock_current_user():
+    with patch('dependencies.get_current_user_required') as mock_get_user:
+        mock_user = MagicMock(spec=Account)
+        mock_user.id = 1
+        mock_user.login = "test_user"
+        mock_user.is_blocked = False
+        
+        mock_get_user.return_value = mock_user
+        
+        async def override_get_current_user_required():
+            return mock_user
+        
+        original_dependency = app.dependency_overrides.get(get_current_user_required)
+        app.dependency_overrides[get_current_user_required] = override_get_current_user_required
+    
+        yield mock_get_user
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "test_name,is_verified,images_qty,description,category,expected_violation",
     [
@@ -31,6 +52,7 @@ def app_client():
 )
 def test_simple_predict_success_cases(
     app_client,
+    mock_current_user,
     test_name,
     is_verified,
     images_qty,
@@ -93,8 +115,10 @@ def test_simple_predict_success_cases(
         mock_user_repo_instance.get.assert_called_once_with(seller_id)
         mock_ad_repo_instance.to_cache.assert_called_once()
 
+@pytest.mark.integration
 async def test_simple_predict_with_cached_result(
-    app_client
+    app_client,
+    mock_current_user
 ):
 
     item_id = 1
@@ -118,8 +142,8 @@ async def test_simple_predict_with_cached_result(
         mock_ad_repo_instance.get.assert_not_called()
         mock_ad_repo_instance.to_cache.assert_not_called()
 
-
-async def test_simple_predict_advertisement_not_found(app_client):
+@pytest.mark.integration
+async def test_simple_predict_advertisement_not_found(app_client, mock_current_user):
     data = {
         'item_id': 9999
     }
@@ -128,9 +152,9 @@ async def test_simple_predict_advertisement_not_found(app_client):
     
     assert response.status_code == 404
     assert "Объявление не найдено" in response.json()["detail"]
-    
 
-async def test_simple_predict_user_not_found(app_client):
+@pytest.mark.integration
+async def test_simple_predict_user_not_found(app_client, mock_current_user):
     item_id = 9999
     ad_repo = AdvertisementRepository()
     with pytest.raises(AdvertisementCreationError):

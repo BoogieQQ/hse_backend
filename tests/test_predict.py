@@ -3,16 +3,35 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from http import HTTPStatus
-
+from dependencies import CurrentUserRequired
+from schemas.account import Account
+from dependencies import get_current_user_required
+from unittest.mock import patch, AsyncMock, MagicMock
 
 @pytest.fixture
 def app_client():
     with TestClient(app) as client:
         yield client
 
+@pytest.fixture
+def mock_current_user():
+    with patch('dependencies.get_current_user_required') as mock_get_user:
+        mock_user = MagicMock(spec=Account)
+        mock_user.id = 1
+        mock_user.login = "test_user"
+        mock_user.is_blocked = False
+        
+        mock_get_user.return_value = mock_user
+        
+        async def override_get_current_user_required():
+            return mock_user
+        
+        original_dependency = app.dependency_overrides.get(get_current_user_required)
+        app.dependency_overrides[get_current_user_required] = override_get_current_user_required
+    
+        yield mock_get_user
 
 ### ---------------------- ТЕСТЫ НА РАБОТУ МЛ-МОДЕЛИ ------------------------------------------
-
 @pytest.mark.parametrize(
     "test_name,is_verified,images_qty,description,category",
     [
@@ -26,6 +45,7 @@ def app_client():
 )
 def test_predict_success_cases(
     app_client,
+    mock_current_user,
     test_name,
     is_verified,
     images_qty,
@@ -63,6 +83,7 @@ def test_predict_success_cases(
 @pytest.mark.parametrize('images_qty', [0])
 def test_seller_id_zero(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -94,6 +115,7 @@ def test_seller_id_zero(
 @pytest.mark.parametrize('images_qty', [0])
 def test_item_id_zero(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -125,6 +147,7 @@ def test_item_id_zero(
 @pytest.mark.parametrize('images_qty', [0])
 def test_empty_name(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -156,6 +179,7 @@ def test_empty_name(
 @pytest.mark.parametrize('images_qty', [0])
 def test_long_name(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -187,6 +211,7 @@ def test_long_name(
 @pytest.mark.parametrize('images_qty', [0])
 def test_long_description(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -219,6 +244,7 @@ def test_long_description(
 @pytest.mark.parametrize('images_qty', [-1, -3, -5, -10, -1000, -1_000_000])
 def test_negative_images_qty(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -252,6 +278,7 @@ def test_negative_images_qty(
 @pytest.mark.parametrize('images_qty', [0])
 def test_seller_id_int_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: str,
     is_verified_seller: bool,
     item_id: int,
@@ -283,6 +310,7 @@ def test_seller_id_int_type(
 @pytest.mark.parametrize('images_qty', [0])
 def test_is_verified_seller_bool_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: str,
     item_id: int,
@@ -314,6 +342,7 @@ def test_is_verified_seller_bool_type(
 @pytest.mark.parametrize('images_qty', [0])
 def test_item_id_int_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: str,
@@ -345,6 +374,7 @@ def test_item_id_int_type(
 @pytest.mark.parametrize('images_qty', [0])
 def test_name_str_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -376,6 +406,7 @@ def test_name_str_type(
 @pytest.mark.parametrize('images_qty', [0])
 def test_description_str_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -407,6 +438,7 @@ def test_description_str_type(
 @pytest.mark.parametrize('images_qty', [0])
 def test_category_int_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,
@@ -438,6 +470,7 @@ def test_category_int_type(
 @pytest.mark.parametrize('images_qty', ['str', 1.1])
 def test_images_qty_int_type(
     app_client: TestClient,
+    mock_current_user,
     seller_id: int,
     is_verified_seller: bool,
     item_id: int,

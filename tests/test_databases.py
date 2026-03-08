@@ -40,6 +40,7 @@ async def test_create_and_remove_users(seller_id, is_verified_seller):
 
     assert remove_result == expected_row
 
+@pytest.mark.integration
 async def test_create_user_exist():    
     seller_id = 1
     is_verified_seller = True
@@ -72,6 +73,7 @@ async def test_select_users(seller_id, is_verified_seller):
 
     await storage.delete(seller_id)
 
+@pytest.mark.integration
 async def test_select_and_delete_user_not_found():    
     seller_id = 2
 
@@ -258,6 +260,7 @@ async def test_create_moderation_with_no_advertisement(item_id, mock_kafka_produ
     assert "не найдено" in str(exc_info.value)
 
 @pytest.mark.parametrize('item_id', IDS)
+@pytest.mark.integration
 async def test_get_moderation_result(item_id, mock_kafka_producer):
     seller_id = 1
 

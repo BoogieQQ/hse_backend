@@ -5,12 +5,13 @@ from schemas.simple_prediction import SimplePredictRequest
 from loguru import logger
 from services.simple_prediction_service import simple_predict as simple_prediction_service
 from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError, UserNotCreationError
+from dependencies import CurrentUserRequired
 
 
 simple_prediction_router = APIRouter()
 
 @simple_prediction_router.post("/simple_predict")
-async def simple_predict(request: SimplePredictRequest):
+async def simple_predict(request: SimplePredictRequest, current_user: CurrentUserRequired):
     try:
         
         logger.info(f"Запрос на предсказание: {request}")
