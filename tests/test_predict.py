@@ -32,6 +32,7 @@ def mock_current_user():
         yield mock_get_user
 
 ### ---------------------- ТЕСТЫ НА РАБОТУ МЛ-МОДЕЛИ ------------------------------------------
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "test_name,is_verified,images_qty,description,category",
     [
@@ -74,6 +75,7 @@ def test_predict_success_cases(
 ### ---------------------- ТЕСТЫ ВАЛИДАЦИИ ВХОДНЫХ ЗНАЧЕНИЙ ------------------------------------------
 
 # Тест на seller_id > 0
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [0, -5, -10, -1000, -1000000])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -106,6 +108,7 @@ def test_seller_id_zero(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # Тест на item_id > 0
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [0, -5, -10, -1000, -1000000])
@@ -138,6 +141,7 @@ def test_item_id_zero(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # Проверка на пустоту name
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -170,6 +174,7 @@ def test_empty_name(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # Проверка на макс. длину name
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -202,6 +207,7 @@ def test_long_name(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # Проверка на макс. длину description
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -235,6 +241,7 @@ def test_long_description(
 
 
 # Проверка на не отриацтельное число images_qty
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -269,6 +276,7 @@ def test_negative_images_qty(
 ### ---------------------- ТЕСТЫ ВАЛИДАЦИИ ВХОДНЫХ ТИПОВ ------------------------------------------
 
 # seller_id должен быть int, а не что-то другое
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', ['str', False, 1.1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -301,6 +309,7 @@ def test_seller_id_int_type(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # is_verified_seller должен быть bool, а не что-то другое
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', ['str', 3, 1.1])
 @pytest.mark.parametrize('item_id', [1])
@@ -333,6 +342,7 @@ def test_is_verified_seller_bool_type(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # item_id должен быть int, а не что-то другое
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', ['str', False, 1.1])
@@ -365,6 +375,7 @@ def test_item_id_int_type(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # name должен быть str, а не что-то другое
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -397,6 +408,7 @@ def test_name_str_type(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # description должен быть str, а не что-то другое
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -429,6 +441,7 @@ def test_description_str_type(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # category должен быть int, а не что-то другое
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
@@ -461,6 +474,7 @@ def test_category_int_type(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 # images_qty должен быть int, а не str
+@pytest.mark.integration
 @pytest.mark.parametrize('seller_id', [1])
 @pytest.mark.parametrize('is_verified_seller', [False])
 @pytest.mark.parametrize('item_id', [1])
