@@ -1,4 +1,3 @@
-import asyncpg
 from typing import Mapping, Any
 from dataclasses import dataclass
 from errors import AdvertisementNotFoundError, AdvertisementCreationError
