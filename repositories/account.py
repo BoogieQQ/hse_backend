@@ -1,20 +1,16 @@
-import asyncpg
-from typing import Mapping, Any, Optional
+from typing import Mapping, Any
 from dataclasses import dataclass
 from errors import AccountNotFoundError, AccountCreationError, AccountBlockedError
 from schemas.account import Account
 from clients.postgres import get_pg_connection
-from clients.redis import get_redis_connection
-from datetime import timedelta
-from json import loads, dumps
-import time
-from metrics import DB_QUERY_DURATION
 import hashlib
-import hmac
-
+from metrcis_constants import QueryType, TableName
+from typing import Any
+from utils import track_db_query
 
 @dataclass(frozen=True)
 class AccountPostgresStorage:
+    @track_db_query(query_type=QueryType.CREATE, table=TableName.ACCOUNT)
     async def create(self, login: str, password: str) -> Mapping[str, Any]:
         query = '''
             INSERT INTO account 
@@ -23,20 +19,17 @@ class AccountPostgresStorage:
             RETURNING id, login, password, is_blocked
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             try:
                 row = await connection.fetchrow(query, login, password, False)
-                duration = time.time() - start_time
-
-                DB_QUERY_DURATION.labels(query_type="create", table="account").observe(duration)
                 
                 if row:
                     return dict(row)
                 raise AccountCreationError("Не удалось создать аккаунт")
             except Exception as e:
                 raise AccountCreationError(str(e))
-    
+            
+    @track_db_query(query_type=QueryType.SELECT, table=TableName.ACCOUNT)
     async def select_by_id(self, account_id: int) -> Mapping[str, Any]:
         query = '''
             SELECT id, login, password, is_blocked
@@ -45,18 +38,15 @@ class AccountPostgresStorage:
             LIMIT 1
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, account_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="select_by_id", table="account").observe(duration)
-            
             if row:
                 return dict(row)
             
             raise AccountNotFoundError(f'Аккаунт с ID {account_id} не найден.')
     
+    @track_db_query(query_type=QueryType.SELECT, table=TableName.ACCOUNT)
     async def select_by_login(self, login: str) -> Mapping[str, Any]:
         query = '''
             SELECT id, login, password, is_blocked
@@ -65,18 +55,15 @@ class AccountPostgresStorage:
             LIMIT 1
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, login)
-            duration = time.time() - start_time
-
-            DB_QUERY_DURATION.labels(query_type="select_by_login", table="account").observe(duration)
             
             if row:
                 return dict(row)
             
             raise AccountNotFoundError(f'Аккаунт с логином {login} не найден.')
     
+    @track_db_query(query_type=QueryType.SELECT, table=TableName.ACCOUNT)
     async def select_by_login_and_password(self, login: str, password: str) -> Mapping[str, Any]:
         query = '''
             SELECT id, login, password, is_blocked
@@ -85,36 +72,30 @@ class AccountPostgresStorage:
             LIMIT 1
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, login, password)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="select_by_credentials", table="account").observe(duration)
-            
             if row:
                 return dict(row)
             
             raise AccountNotFoundError('Неверный логин или пароль.')
-    
+        
+    @track_db_query(query_type=QueryType.DELETE, table=TableName.ACCOUNT)
     async def delete(self, account_id: int) -> Mapping[str, Any]:
         query = '''
             DELETE FROM account
             WHERE id = $1::INTEGER
             RETURNING id, login, password, is_blocked
         '''
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, account_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="delete", table="account").observe(duration)
-            
             if row:
                 return dict(row)
             
             raise AccountNotFoundError(f'Аккаунт с ID {account_id} не найден.')
     
+    @track_db_query(query_type=QueryType.UPDATE, table=TableName.ACCOUNT)
     async def block(self, account_id: int) -> Mapping[str, Any]:
         query = '''
             UPDATE account
@@ -122,18 +103,16 @@ class AccountPostgresStorage:
             WHERE id = $1::INTEGER
             RETURNING id, login, password, is_blocked
         '''
-        start_time = time.time()
+        
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, account_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="block", table="account").observe(duration)
-            
             if row:
                 return dict(row)
             
             raise AccountNotFoundError(f'Аккаунт с ID {account_id} не найден.')
     
+    @track_db_query(query_type=QueryType.UPDATE, table=TableName.ACCOUNT)
     async def unblock(self, account_id: int) -> Mapping[str, Any]:
         query = '''
             UPDATE account
@@ -141,12 +120,9 @@ class AccountPostgresStorage:
             WHERE id = $1::INTEGER
             RETURNING id, login, password, is_blocked
         '''
-        start_time = time.time()
+        
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, account_id)
-            duration = time.time() - start_time
-
-            DB_QUERY_DURATION.labels(query_type="unblock", table="account").observe(duration)
             
             if row:
                 return dict(row)
@@ -161,14 +137,13 @@ class AccountPostgresStorage:
                 WHERE id = $1::INTEGER
             )
         '''
-        start_time = time.time()
+        
         async with get_pg_connection() as connection:
             result = await connection.fetchval(query, account_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="exists", table="account").observe(duration)
             return bool(result)
-    
+
+    @track_db_query(query_type=QueryType.EXISTS, table=TableName.ACCOUNT)
     async def exists_by_login(self, login: str) -> bool:
         query = '''
             SELECT EXISTS(
@@ -177,12 +152,10 @@ class AccountPostgresStorage:
                 WHERE login = $1::TEXT
             )
         '''
-        start_time = time.time()
+        
         async with get_pg_connection() as connection:
             result = await connection.fetchval(query, login)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="exists_by_login", table="account").observe(duration)
             return bool(result)
 
 @dataclass(frozen=True)

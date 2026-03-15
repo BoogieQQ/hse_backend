@@ -1,19 +1,19 @@
 import asyncpg
-from typing import Mapping, Any, Sequence
+from typing import Mapping, Any
 from dataclasses import dataclass
-from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError
-from schemas.simple_prediction import SimplePredictRequest, Advertisement
+from errors import AdvertisementNotFoundError, AdvertisementCreationError
+from schemas.simple_prediction import Advertisement
 from schemas.prediction import PredictionResponse
 from clients.postgres import get_pg_connection
 from clients.redis import get_redis_connection
 from datetime import timedelta
 from json import loads, dumps
-import time
-from metrics import DB_QUERY_DURATION
-
+from metrcis_constants import QueryType, TableName
+from utils import track_db_query
 
 @dataclass(frozen=True)
-class AdvertisementPostgresStorage:    
+class AdvertisementPostgresStorage:
+    @track_db_query(query_type=QueryType.CREATE, table=TableName.ADVERTISEMENTS)    
     async def create(self, item_id: int, seller_id: int, name: str, 
                      description: str, category: int, images_qty: int, is_closed: bool = False):
         query = '''
@@ -23,18 +23,16 @@ class AdvertisementPostgresStorage:
             RETURNING *
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             try:
                 row = await connection.fetchrow(query, item_id, seller_id, name, 
                                             description, category, images_qty, is_closed)
-                duration = time.time() - start_time
 
-                DB_QUERY_DURATION.labels(query_type="create", table="advertisements").observe(duration)
                 return dict(row)
             except Exception as e:
                 raise AdvertisementCreationError(str(e))
-    
+            
+    @track_db_query(query_type=QueryType.SELECT, table=TableName.ADVERTISEMENTS)  
     async def select(self, item_id: int):
         query = '''
             SELECT *
@@ -43,17 +41,15 @@ class AdvertisementPostgresStorage:
             LIMIT 1
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, item_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="select", table="advertisements").observe(duration)
             if row:
                 return dict(row)
             
             raise AdvertisementNotFoundError('Не найдено объявление.')
 
+    @track_db_query(query_type=QueryType.EXISTS, table=TableName.ADVERTISEMENTS)  
     async def exists(self, item_id: int) -> bool:
         query = '''
             SELECT EXISTS(
@@ -62,14 +58,12 @@ class AdvertisementPostgresStorage:
                 WHERE item_id = $1::INTEGER
             )
         '''
-        start_time = time.time()
         async with get_pg_connection() as connection:
             result = await connection.fetchval(query, item_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="exists", table="advertisements").observe(duration)
             return bool(result)
-        
+    
+    @track_db_query(query_type=QueryType.UPDATE, table=TableName.ADVERTISEMENTS)  
     async def close(self, item_id: int):
         query = '''
             UPDATE advertisements 
@@ -77,31 +71,24 @@ class AdvertisementPostgresStorage:
             WHERE item_id = $1::INTEGER
             RETURNING *
         '''
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, item_id)
-            duration = time.time() - start_time
-            
-            DB_QUERY_DURATION.labels(query_type="update", table="advertisements").observe(duration)
-            
+                        
             if row:
                 return dict(row)
             
             raise AdvertisementNotFoundError('Не найдено объявление для закрытия.')
     
+    @track_db_query(query_type=QueryType.DELETE, table=TableName.ADVERTISEMENTS)  
     async def delete(self, item_id: int):
         query = '''
             DELETE FROM advertisements
             WHERE item_id = $1::INTEGER
             RETURNING *
         '''
-        start_time = time.time()
         async with get_pg_connection() as connection:
 
             row = await connection.fetchrow(query, item_id)
-            duration = time.time() - start_time
-
-            DB_QUERY_DURATION.labels(query_type="delete", table="advertisements").observe(duration)
             
             if row:
                 return dict(row)

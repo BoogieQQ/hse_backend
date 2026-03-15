@@ -1,5 +1,10 @@
 import uvicorn
 import yaml
+import sentry_sdk
+import os
+
+from dotenv import load_dotenv
+load_dotenv() 
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -47,6 +52,11 @@ app.include_router(async_prediction_router)
 app.include_router(moderation_result_router)
 app.include_router(close_router)
 app.include_router(auth_router)
+
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    send_default_pii=True,
+)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=CONFIG['app']['host'], port=CONFIG['app']['port'])
