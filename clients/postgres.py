@@ -12,7 +12,7 @@ async def get_pg_connection() -> AsyncGenerator[None, asyncpg.Connection]:
         password='postgres',
         database='avito',
         host='localhost',
-        port=5432
+        port=5435
     )
 
     yield connection

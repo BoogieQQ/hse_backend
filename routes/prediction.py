@@ -2,13 +2,14 @@ from fastapi import APIRouter, HTTPException
 from services.prediction_service import predict as prediction_service_predict
 from schemas.prediction import PredictionRequest, PredictionResponse
 from services.model_service import ModelService
+from dependencies import CurrentUserRequired
 
 from loguru import logger
 
 prediction_router = APIRouter()
 
 @prediction_router.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest):
+async def predict(request: PredictionRequest, current_user: CurrentUserRequired):
     try:
         if not ModelService.is_initialized():
             logger.error("Модель не загружена при попытке предсказания")

@@ -4,12 +4,13 @@ from schemas.async_prediction import AsyncPredictRequest
 
 from loguru import logger
 from services.async_prediction_service import async_predict as async_prediction_service
+from dependencies import CurrentUserRequired
 
 
 async_prediction_router = APIRouter()
 
 @async_prediction_router.post("/async_predict")
-async def async_predict(request: AsyncPredictRequest, fastapi_request: Request):
+async def async_predict(request: AsyncPredictRequest, fastapi_request: Request, current_user: CurrentUserRequired):
     try:
         
         logger.info(f"Запрос на модерацию: {request}")
