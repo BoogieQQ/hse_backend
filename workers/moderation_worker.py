@@ -17,7 +17,6 @@ with open('config.yaml', 'r') as f:
 
 async def main():
     kafka_config = CONFIG['kafka']
-    db_config    = CONFIG['database']
     
     max_retries = kafka_config['retries_before_dql']
     max_retry_delay = kafka_config['max_retry_delay']
@@ -42,6 +41,10 @@ async def main():
     logger.info("Сервис готов к работе!")
 
     logger.info(f"[Мoderation_worker] Обработка топика {kafka_config['moderation_topic']}")
+
+    moderations_repo = ModerationResultRepository()
+    ad_repo = AdvertisementRepository()
+    user_repo = UserRepository()
     
     try:
         async for msg in consumer:
@@ -51,10 +54,6 @@ async def main():
                     task_id = json.loads(message.decode('utf-8'))['item_id']
                     
                     logger.info(f'Обработка объявления task_id={task_id}')
-                    
-                    moderations_repo = ModerationResultRepository()
-                    ad_repo = AdvertisementRepository()
-                    user_repo = UserRepository()
 
                     moderation_task = await moderations_repo.get(task_id)
 

@@ -22,10 +22,7 @@ async def get_moderation_result(task_id: int) -> ModerationResult:
         
         logger.info(f"Найдена задача модерации: {moderation_record}")
         
-        return ModerationResult(
-            id=moderation_record.id,
-            **moderation_record.dict(exclude={'id'})
-        )
+        return ModerationResult(**moderation_record.dict())
 
     except Exception as e:
         logger.error(f"Что-то пошло не так: {e}")
