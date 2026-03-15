@@ -13,6 +13,11 @@ model:
   description_len_normalize: 1000
   category_normalize: 100
 
+mlflow:
+  tracking_uri: sqlite:///mlflow.db
+  experiment_name: moderation-model
+  registry_model_name: moderation-model
+
 kafka:
   bootstrap_servers: localhost:9092
   retries_before_dql: 3

@@ -11,7 +11,7 @@ from fastapi import HTTPException
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from metrics import PREDICTION_ERRORS_TOTAL
-
+from errors import ModelUninitialized
 
 async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
     try:
@@ -32,10 +32,8 @@ async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
         user_data = user.model_dump()
         request = {**ad_data, **user_data}
         logger.info(f'Загружены данные из бд: {request}')
-
-        features = ModelService.extract_features(request)
     
-        is_violation, probability = ModelService.predict(features)
+        is_violation, probability = ModelService.predict(request)
         
         logger.info(f"Результат предсказания: seller_id={request['seller_id']}, item_id={request['item_id']}, is_violation={is_violation}, probability={probability:.4f}")
         
@@ -46,7 +44,7 @@ async def simple_predict(request: SimplePredictRequest) -> PredictionResponse:
             probability=probability
         )
     
-    except (UserNotFoundError, AdvertisementNotFoundError, AdvertisementCreationError, UserNotCreationError) as e:
+    except (UserNotFoundError, AdvertisementNotFoundError, AdvertisementCreationError, UserNotCreationError, ModelUninitialized) as e:
         error_type = type(e).__name__
         PREDICTION_ERRORS_TOTAL.labels(error_type=error_type).inc()
         raise

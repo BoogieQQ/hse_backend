@@ -3,6 +3,7 @@ from services.prediction_service import predict as prediction_service_predict
 from schemas.prediction import PredictionRequest, PredictionResponse
 from services.model_service import ModelService
 from dependencies import CurrentUserRequired
+from errors import ModelUninitialized
 
 from loguru import logger
 
@@ -11,19 +12,15 @@ prediction_router = APIRouter()
 @prediction_router.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest, current_user: CurrentUserRequired):
     try:
-        if not ModelService.is_initialized():
-            logger.error("Модель не загружена при попытке предсказания")
-            raise HTTPException(
-                status_code=503,
-                detail="Модель не загружена."
-            )
-        
         logger.info(f"Запрос на предсказание: {request}")
 
         response = prediction_service_predict(request)
         
         return response
-        
+
+    except ModelUninitialized as e:
+        logger.error("Модель не загружена при попытке предсказания")
+    
     except ValueError as e:
         logger.error(f"Ошибка валидации входных данных: {e}")
 
@@ -31,7 +28,6 @@ async def predict(request: PredictionRequest, current_user: CurrentUserRequired)
             status_code=422,
             detail=f"Ошибка валидации входных данных: {str(e)}"
         )
-        
     except Exception as e:
         logger.error(f"Внутренняя ошибка сервера при предсказании: {e}")
         raise HTTPException(

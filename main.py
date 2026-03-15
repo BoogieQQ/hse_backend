@@ -15,6 +15,7 @@ from routes.auth import auth_router
 from services.model_service import ModelService
 from clients.kafka import KafkaProducer
 from prometheus_fastapi_instrumentator import Instrumentator
+from errors import ModelUninitialized
 
 with open('config.yaml', 'r') as file:
     CONFIG = yaml.safe_load(file)
@@ -25,9 +26,12 @@ async def lifespan(app: FastAPI):
     app.state.kafka_producer = kafka_producer
 
     logger.info("Запуск сервиса модели...")
-    ModelService.init()
-    logger.info("Сервис готов к работе!")
-    
+    try:
+        ModelService.init()
+        logger.info("Сервис готов к работе!")
+    except ModelUninitialized as e:
+        logger.error(e)
+
     yield
     
     logger.info("Остановка сервиса...")

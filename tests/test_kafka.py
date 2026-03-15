@@ -88,8 +88,7 @@ async def test_worker_message_processing(task_id, mock_moderation_repo_worker, m
     user_data = {"seller_id": user.seller_id, "is_verified_seller": user.is_verified_seller}
     request = {**ad_data, **user_data}
     
-    features = mock_model_service_worker.extract_features(request)
-    is_violation, probability = mock_model_service_worker.predict(features)
+    is_violation, probability = mock_model_service_worker.predict(request)
     
     await mock_moderation_repo_worker.update(
         task_id=received_task_id,

@@ -30,3 +30,6 @@ class UnauthorizedError(Exception):
 
 class AuthorizedError(Exception):
     ...
+
+class ModelUninitialized(Exception):
+    ...
