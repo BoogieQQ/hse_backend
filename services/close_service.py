@@ -17,7 +17,7 @@ async def close_advertisement(item_id: int) -> Advertisement:
             raise AdvertisementNotFoundError(detail=f"Объявление с ID {item_id} не найдено")
 
         logger.info(f"Объявление {item_id} найдено в БД. Удалениe...")
-        closed_adv = await ad_repo.delete(item_id)
+        closed_adv = await ad_repo.close(item_id)
 
         return closed_adv
 

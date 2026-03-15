@@ -63,8 +63,8 @@ def test_simple_predict_success_cases(
     item_id = 1
     seller_id = 1
     
-    with patch('services.simple_prediction_service.AdvertisementRepository') as MockAdRepo, \
-         patch('services.simple_prediction_service.UserRepository') as MockUserRepo:
+    with patch('services.prediction_service.AdvertisementRepository') as MockAdRepo, \
+         patch('services.prediction_service.UserRepository') as MockUserRepo:
         
         mock_ad_repo_instance = AsyncMock()
         mock_user_repo_instance = AsyncMock()
@@ -122,7 +122,7 @@ async def test_simple_predict_with_cached_result(
 ):
 
     item_id = 1
-    with patch('services.simple_prediction_service.AdvertisementRepository') as MockAdRepo:
+    with patch('services.prediction_service.AdvertisementRepository') as MockAdRepo:
 
         mock_ad_repo_instance = AsyncMock()
         MockAdRepo.return_value = mock_ad_repo_instance

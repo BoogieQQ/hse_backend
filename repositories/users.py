@@ -1,14 +1,13 @@
-import asyncpg
-from typing import Mapping, Any, Sequence
 from dataclasses import dataclass
-from errors import AdvertisementNotFoundError, UserNotFoundError, UserNotCreationError
-from schemas.simple_prediction import SimplePredictRequest, User, Advertisement
+from errors import UserNotFoundError, UserNotCreationError
+from schemas.simple_prediction import User
 from clients.postgres import get_pg_connection
-import time
-from metrics import DB_QUERY_DURATION
+from metrcis_constants import QueryType, TableName
+from utils import track_db_query
 
 @dataclass(frozen=True)
-class UserPostgresStorage:    
+class UserPostgresStorage:  
+    @track_db_query(query_type=QueryType.CREATE, table=TableName.USERS)  
     async def create(self, seller_id: int, is_verified_seller: bool):
         query = '''
             INSERT INTO users (seller_id, is_verified_seller)
@@ -16,17 +15,15 @@ class UserPostgresStorage:
             RETURNING *
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             try:
                 row = await connection.fetchrow(query, seller_id, is_verified_seller)
-                duration = time.time() - start_time
 
-                DB_QUERY_DURATION.labels(query_type="create", table="users").observe(duration)
                 return dict(row)
             except Exception as e:
                 raise UserNotCreationError(str(e))
     
+    @track_db_query(query_type=QueryType.SELECT, table=TableName.USERS)  
     async def select(self, seller_id: int):
         query = '''
             SELECT *
@@ -35,18 +32,15 @@ class UserPostgresStorage:
             LIMIT 1
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, seller_id)
-            duration = time.time() - start_time
 
-            DB_QUERY_DURATION.labels(query_type="select", table="users").observe(duration)
-            
             if row:
                 return dict(row)
             
             raise UserNotFoundError('Не найден пользователь.')
     
+    @track_db_query(query_type=QueryType.DELETE, table=TableName.USERS)  
     async def delete(self, seller_id: int):
         query = '''
             DELETE FROM users
@@ -54,12 +48,8 @@ class UserPostgresStorage:
             RETURNING *
         '''
 
-        start_time = time.time()
         async with get_pg_connection() as connection:
             row = await connection.fetchrow(query, seller_id)
-            duration = time.time() - start_time
-
-            DB_QUERY_DURATION.labels(query_type="delete", table="users").observe(duration)
             
             if row:
                 return dict(row)

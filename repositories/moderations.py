@@ -5,9 +5,14 @@ from errors import ModerationResultNotFoundError, ModerationResultCreationError
 from schemas.async_prediction import ModerationResult
 from clients.postgres import get_pg_connection
 
+from utils import track_db_query
+from metrcis_constants import QueryType, TableName
+
 
 @dataclass(frozen=True)
-class ModerationResultPostgresStorage:    
+class ModerationResultPostgresStorage:   
+
+    @track_db_query(query_type=QueryType.CREATE, table=TableName.MODERATION)   
     async def create(self, item_id: int, status: str, is_violation: bool = None, 
                      probability: float = None, error_message: str = None, 
                      processed_at: str = None):
@@ -24,10 +29,12 @@ class ModerationResultPostgresStorage:
             try:
                 row = await connection.fetchrow(query, item_id, status, is_violation, 
                                             probability, error_message, processed_at)
+            
                 return dict(row)
             except Exception as e:
                 raise ModerationResultCreationError(str(e))
     
+    @track_db_query(query_type=QueryType.SELECT, table=TableName.MODERATION)   
     async def select(self, task_id: int):
         query = '''
             SELECT *
@@ -44,6 +51,7 @@ class ModerationResultPostgresStorage:
             
             raise ModerationResultNotFoundError('Не найден результат модерации.')
 
+    @track_db_query(query_type=QueryType.UPDATE, table=TableName.MODERATION)
     async def update(self, task_id: int, status: str, is_violation: bool, probability: float):
 
         query = '''
@@ -60,6 +68,7 @@ class ModerationResultPostgresStorage:
                 row = await connection.fetchrow(
                     query, status, is_violation, probability, task_id
                 )
+                
                 if row:
                     result = dict(row)
                     if 'processed_at' in result:
@@ -67,7 +76,8 @@ class ModerationResultPostgresStorage:
                     return result
         
         raise ModerationResultNotFoundError(f'Модерация с ID={task_id} не найдена')
-
+    
+    @track_db_query(query_type=QueryType.UPDATE, table=TableName.MODERATION)
     async def update_failed(self, task_id: int, status: str, error_message: str):
 
         query = '''
@@ -83,6 +93,7 @@ class ModerationResultPostgresStorage:
                 row = await connection.fetchrow(
                     query, status, error_message, task_id
                 )
+                
                 if row:
                     result = dict(row)
                     if 'processed_at' in result:
@@ -90,7 +101,8 @@ class ModerationResultPostgresStorage:
                     return result
         
         raise ModerationResultNotFoundError(f'Модерация с ID={task_id} не найдена')
-       
+    
+    @track_db_query(query_type=QueryType.EXISTS, table=TableName.MODERATION)
     async def exists(self, task_id: int) -> bool:
         query = '''
             SELECT EXISTS(
@@ -104,6 +116,7 @@ class ModerationResultPostgresStorage:
             result = await connection.fetchval(query, task_id)
             return bool(result)
 
+    @track_db_query(query_type=QueryType.TRUNCATE, table=TableName.MODERATION)
     async def truncate_table(self):
         query = '''
             TRUNCATE TABLE moderation_results RESTART IDENTITY CASCADE;
@@ -114,7 +127,8 @@ class ModerationResultPostgresStorage:
                 await connection.execute(query)
             except Exception as e:
                 raise Exception(f"Не получилось отчистить таблицу: {str(e)}")
-        
+    
+    @track_db_query(query_type=QueryType.DELETE, table=TableName.MODERATION)
     async def delete(self, task_id: int):
         query = '''
             DELETE FROM moderation_results

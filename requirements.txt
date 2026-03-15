@@ -21,3 +21,5 @@ prometheus-fastapi-instrumentator==7.1.0
 pyjwt==2.11.0
 freezegun==1.5.5
 pyyaml==6.0.3
+mlflow==3.10.1
+sentry-sdk==2.54.0

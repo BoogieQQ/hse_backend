@@ -2,16 +2,8 @@ import pytest
 import asyncio
 from main import app
 from unittest.mock import Mock, AsyncMock, MagicMock, patch
-from schemas.async_prediction import AsyncPredictRequest
 from services.async_prediction_service import async_predict as async_prediction_service
 from services.moderation_result_service import get_moderation_result
-from repositories.users import UserPostgresStorage
-from repositories.advertisements import AdvertisementPostgresStorage
-from repositories.moderations import ModerationResultRepository
-from fastapi.testclient import TestClient
-from http import HTTPStatus
-
-from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError, UserNotCreationError
 
 
 ### ---------------------- ТЕСТ ЛОГИКИ ВОРКЕРА ------------------------------------------
@@ -88,8 +80,7 @@ async def test_worker_message_processing(task_id, mock_moderation_repo_worker, m
     user_data = {"seller_id": user.seller_id, "is_verified_seller": user.is_verified_seller}
     request = {**ad_data, **user_data}
     
-    features = mock_model_service_worker.extract_features(request)
-    is_violation, probability = mock_model_service_worker.predict(features)
+    is_violation, probability = mock_model_service_worker.predict(request)
     
     await mock_moderation_repo_worker.update(
         task_id=received_task_id,

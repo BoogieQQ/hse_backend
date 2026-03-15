@@ -2,7 +2,6 @@ import uuid
 
 from repositories.moderations import ModerationResultRepository
 from repositories.advertisements import AdvertisementRepository
-from fastapi import HTTPException
 
 from schemas.async_prediction import AsyncPredictRequest, AsyncPredictResponse
 from loguru import logger
