@@ -182,7 +182,7 @@ async def test_redis_delete_advertisement():
     result_before = await redis_storage.get(item_id)
     assert result_before == test_data
 
-    await adv_storage.delete(item_id)
+    await adv_storage.close(item_id)
     await user_storage.delete(seller_id)
 
     result_after = await redis_storage.get(item_id)

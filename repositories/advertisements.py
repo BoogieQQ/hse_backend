@@ -69,6 +69,25 @@ class AdvertisementPostgresStorage:
 
             DB_QUERY_DURATION.labels(query_type="exists", table="advertisements").observe(duration)
             return bool(result)
+        
+    async def close(self, item_id: int):
+        query = '''
+            UPDATE advertisements 
+            SET is_closed = TRUE 
+            WHERE item_id = $1::INTEGER
+            RETURNING *
+        '''
+        start_time = time.time()
+        async with get_pg_connection() as connection:
+            row = await connection.fetchrow(query, item_id)
+            duration = time.time() - start_time
+            
+            DB_QUERY_DURATION.labels(query_type="update", table="advertisements").observe(duration)
+            
+            if row:
+                return dict(row)
+            
+            raise AdvertisementNotFoundError('Не найдено объявление для закрытия.')
     
     async def delete(self, item_id: int):
         query = '''
@@ -91,6 +110,7 @@ class AdvertisementPostgresStorage:
 
 @dataclass(frozen=True)
 class AdvertisementRedisStorage:
+    # 30 минут - это компромисс между актуальностью данных и нагрузкой на основную бд.
     _TTL: timedelta = timedelta(minutes=30)
 
     async def set(self, item_id: int, row: Mapping[str, Any]) -> None:
@@ -143,8 +163,10 @@ class AdvertisementRepository:
     async def exists(self, item_id: int):
         is_exist = await self.advertisement_postgres_storage.exists(item_id)
         return is_exist
-
-    async def delete(self, item_id: int):
+    
+    async def close(self, item_id: int):
+        raw_advertisement = await self.advertisement_postgres_storage.close(item_id)
+        
         await self.advertisement_redis_storage.delete(item_id)
-        raw_advertisement = await self.advertisement_postgres_storage.delete(item_id)
+        
         return Advertisement(**raw_advertisement)

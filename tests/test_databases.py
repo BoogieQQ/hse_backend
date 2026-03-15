@@ -345,6 +345,9 @@ async def test_close_advertisements(app_client, item_id, seller_id, name, descri
     response_data = response.json()
 
     assert response.status_code == HTTPStatus.OK
-    assert response_data == adv_data
+
+    adv_data['is_closed'] = True
+    assert response_data['is_closed'] is True
+    assert adv_data == response_data
 
     await user_storage.delete(seller_id)
