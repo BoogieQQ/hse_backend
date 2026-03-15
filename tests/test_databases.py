@@ -14,6 +14,7 @@ from http import HTTPStatus
 from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError, UserNotCreationError
 
 IDS = [1, 100, 1000, 1_000_000]
+IS_VERIFIED = [True, False, False, True]
 
 @pytest.fixture
 def app_client():
@@ -23,7 +24,7 @@ def app_client():
 ### ---------------------- ТЕСТЫ ТАБЛИЦЫ USERS ------------------------------------------
 @pytest.mark.integration
 @pytest.mark.parametrize('seller_id', IDS)
-@pytest.mark.parametrize('is_verified_seller', [True])
+@pytest.mark.parametrize('is_verified_seller', IS_VERIFIED)
 async def test_create_and_remove_users(seller_id, is_verified_seller):    
     expected_row = {
         'seller_id': seller_id,
@@ -55,7 +56,7 @@ async def test_create_user_exist():
 
 @pytest.mark.integration
 @pytest.mark.parametrize('seller_id', IDS)
-@pytest.mark.parametrize('is_verified_seller', [True])
+@pytest.mark.parametrize('is_verified_seller', IS_VERIFIED)
 async def test_select_users(seller_id, is_verified_seller): 
 
     expected_row = {
@@ -180,14 +181,18 @@ async def test_select_advertisements(item_id, seller_id, name, description, cate
     await user_storage.delete(seller_id)
 
 @pytest.mark.integration
-async def test_select_and_delete_advertisement_not_found():    
+async def test_select_advertisement_not_found():    
     item_id = 2
-
     storage = AdvertisementPostgresStorage()
     
     with pytest.raises(AdvertisementNotFoundError):
         await storage.select(item_id)
 
+@pytest.mark.integration
+async def test_delete_advertisement_not_found():    
+    item_id = 2
+    storage = AdvertisementPostgresStorage()
+    
     with pytest.raises(AdvertisementNotFoundError):
         await storage.delete(item_id)
 

@@ -14,7 +14,7 @@ async def predict(request: PredictionRequest, current_user: CurrentUserRequired)
     try:
         logger.info(f"Запрос на предсказание: {request}")
 
-        response = prediction_service_predict(request)
+        response = await prediction_service_predict(request)
         
         return response
 

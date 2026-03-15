@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from schemas.simple_prediction import SimplePredictRequest
 
 from loguru import logger
-from services.simple_prediction_service import simple_predict as simple_prediction_service
+from services.prediction_service import simple_predict as simple_prediction_service
 from errors import AdvertisementNotFoundError, UserNotFoundError, AdvertisementCreationError, UserNotCreationError
 from dependencies import CurrentUserRequired
 
